@@ -24,6 +24,9 @@
         position: fixed;
         top: 0;
         left: 0;
+
+        /* Fade animation */
+        transition: opacity 0.25s ease;
       }
 
       @media screen and (max-width: 1024px) {
@@ -79,8 +82,22 @@
               images = [];
 
           var refresh = function() {
+            var loaded = function() {
+              container.removeEventListener('load', loaded);
+
+              container.style.opacity = 1.0;
+            };
+
+            var faded = function() {
+              container.removeEventListener('transitionend', faded);
+              container.addEventListener('load', loaded);
+
+              container.setAttribute('src', images[current_image]);
+            };
+            container.addEventListener('transitionend', faded, false);
+
             container.classList.add('bg');
-            container.setAttribute('src', images[current_image]);
+            container.style.opacity = 0.0;
           };
 
           var options = {
