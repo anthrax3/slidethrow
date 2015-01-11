@@ -47,13 +47,13 @@
         "use strict";
 
         var callback = function() {
-          var _cb = function() {};
+          var _cbs = [];
 
           return function(cb) {
             if (_.isFunction(cb)) {
-              _cb = cb;
+              _cbs.push(cb);
             } else {
-              _cb.apply(null, arguments);
+              _.invoke(_cbs, 'apply', null, arguments);
             }
           };
         };
@@ -145,8 +145,78 @@
           return options;
         })(document.body);
 
+        var sfx = (function() {
+          var context = new (window.AudioContext || window.webkitAudioContext)();
+          var source = context.createBufferSource();
+          source.connect(context.destination);
+
+          var request = new XMLHttpRequest();
+          request.open('GET', 'agfa.mp3', true);
+          request.responseType = 'arraybuffer';
+          request.onload = function() {
+            context.decodeAudioData(request.response, function(buffer) {
+              source.buffer = buffer;
+            });
+          };
+          request.send();
+
+          var current_loop_point = 0;
+          var loop_points = [
+            [0.0, 0.5],
+            [2.5, 5.5],
+            [7.5, 10.5],
+            [12.5, 15.5],
+            [17.5, 19.5],
+            [21.5, 24.5],
+          ];
+
+          var refresh = function() {
+            source.loop = true;
+
+            var loop_point = loop_points[current_loop_point];
+            if (loop_point) {
+              source.loopStart = loop_point[0];
+              source.loopEnd = loop_point[1];
+
+              console.log(source.loopStart);
+              console.log(source.loopEnd);
+            } else {
+              source.loop = false;
+              source.onended = function() {
+                var old_source = source;
+                old_source.disconnect(context.destination);
+                source = context.createBufferSource();
+                source.connect(context.destination);
+                source.buffer = old_source.buffer;
+
+                current_loop_point = 0;
+                refresh();
+                source.start();
+              };
+            }
+          }
+
+          var options = {
+            clicked: callback(),
+            start: function() {
+              current_loop_point = 0;
+              refresh();
+              source.start()
+            },
+            next: function() {
+              current_loop_point++;
+              refresh();
+            }
+          };
+
+          return options;
+        })();
+
         chooser.success(slides.replace);
+        chooser.success(sfx.start);
+        keys.left(sfx.next);
         keys.left(slides.prev);
+        keys.right(sfx.next);
         keys.right(slides.next);
       </script>
     </body>

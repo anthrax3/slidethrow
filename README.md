@@ -3,7 +3,7 @@
 Yet another fullscreen HTML5 slideshow. This one offers the best in artisan:
 
 - [x] hard fades between slides
-- [ ] slide projector SFX
+- [x] slide projector SFX
 - [ ] vignetting
 - [ ] glowing bulb backlight
 
