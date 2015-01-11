@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Slide Throw</title>
+
+    <style>
+      html, body {
+        background-color: #000;
+      }
+
+      img.bg {
+        /* Set rules to fill background */
+        min-height: 100%;
+        min-width: 1024px;
+
+        /* Set up proportionate scaling */
+        width: 100%;
+        height: auto;
+
+        /* Set up positioning */
+        position: fixed;
+        top: 0;
+        left: 0;
+      }
+
+      @media screen and (max-width: 1024px) {
+        img.bg {
+          left: 50%;
+          margin-left: -512px;
+        }
+      }
+    </style>
+
+    <body>
+      <img id="slide" />
+
+      <script src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="thfgfjt2kudtt9a"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/2.4.1/lodash.min.js"></script>
+
+      <script>
+        var callback = function() {
+          var _cb = function() {};
+
+          return function(cb) {
+            if (_.isFunction(cb)) {
+              _cb = cb;
+            } else {
+              _cb.apply(null, arguments);
+            }
+          };
+        };
+
+        var chooser = (function(container) {
+          var options = {
+            success: callback()
+          };
+
+          var button = Dropbox.createChooseButton({
+            linkType: 'direct',
+            multiselect: true,
+            extensions: ['.jpeg', '.jpg'],
+            success: function(files) {
+              var imgs = _.map(files, function(f) { return f.link; });
+              options.success(imgs);
+            },
+          });
+          container.appendChild(button);
+
+          return options;
+        })(document.body);
+
+        var slides = (function(container) {
+          var current_image = 0,
+              images = [];
+
+          var refresh = function() {
+            container.classList.add('bg');
+            container.setAttribute('src', images[current_image]);
+          };
+
+          var options = {
+            prev: function() {
+              current_image = (current_image - 1) % images.length;
+              refresh();
+            },
+            next: function() {
+              current_image = (current_image + 1) % images.length;
+              refresh();
+            },
+            replace: function(new_images) {
+              current_image = 0;
+              images = new_images;
+              refresh();
+            },
+          };
+
+          return options;
+        })(document.getElementById('slide'));
+
+        var keys = (function(container) {
+          var options = {
+            left: callback(),
+            right: callback(),
+          };
+
+          container.onkeydown = function(e) {
+            e = e || window.event;
+            switch(e.which || e.keyCode) {
+              case 37:
+              options.left();
+              break;
+
+              case 39:
+              options.right();
+              break;
+
+              default:
+              return;
+            }
+            e.preventDefault();
+          };
+
+          return options;
+        })(document.body);
+
+        chooser.success(slides.replace);
+        keys.left(slides.prev);
+        keys.right(slides.next);
+      </script>
+    </body>
+  </head>
+</html>
