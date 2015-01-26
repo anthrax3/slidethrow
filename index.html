@@ -212,9 +212,12 @@
 
               current_loop_point = 0;
             }
+
+	    options.clicked();
           };
 
           var options = {
+            clicked: callback(),
             start: function() {
               source.onended = loop_cb;
               schedule(loop_points[current_loop_point])
@@ -227,12 +230,43 @@
           return options;
         })();
 
+        var when = function() {
+          var then = callback();
+
+          var triggers = _.map(arguments, function(cb) {
+            var _promise = {
+              fulfilled: false,
+              forget: function() {
+                _promise.fulfilled = false;
+              }
+            };
+
+            cb(function() {
+              _promise.fulfilled = true;
+
+              if (_.every(triggers, 'fulfilled')) {
+                then();
+                _.invoke(triggers, 'forget');
+              }
+            });
+
+            return _promise;
+          });
+
+          return { then: then };
+        };
+
         chooser.success(slides.replace);
         chooser.success(sfx.start);
+
         keys.left(sfx.next);
-        keys.left(slides.prev);
         keys.right(sfx.next);
-        keys.right(slides.next);
+
+        when(keys.right, sfx.clicked)
+          .then(slides.next);
+
+        when(keys.left, sfx.clicked)
+          .then(slides.prev);
       </script>
     </body>
   </head>
