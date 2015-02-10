@@ -28,9 +28,10 @@
     </style>
 
     <body>
+      <input type="file" id="files" name="files[]" multiple />
+
       <img id="slide" />
 
-      <script src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="thfgfjt2kudtt9a"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/2.4.1/lodash.min.js"></script>
 
       <script>
@@ -48,24 +49,39 @@
           };
         };
 
-        var chooser = (function(container) {
+        var file_chooser = (function(container) {
           var options = {
             success: callback()
           };
 
-          var button = Dropbox.createChooseButton({
-            linkType: 'direct',
-            multiselect: true,
-            extensions: ['.jpeg', '.jpg'],
-            success: function(files) {
-              var imgs = _.map(files, function(f) { return f.link; });
-              options.success(imgs);
-            },
+          options.success(function() {
+            container.style.display = 'none';
           });
-          container.appendChild(button);
+
+          var handleFileSelect = function(evt) {
+            var images = _.filter(evt.target.files, function(f) { return f.type.match('image.*'); });
+            var files = _.map(images, function(f) {
+              var _result = {
+                url: null,
+              };
+
+              var reader = new FileReader();
+              reader.onload = function(e) {
+                _result.url = e.target.result;
+
+                if (_.every(files, 'url')) {
+                  options.success(_.pluck(files, 'url'));
+                }
+              };
+              reader.readAsDataURL(f);
+
+              return _result;
+            });
+          };
+          container.addEventListener('change', handleFileSelect, false);
 
           return options;
-        })(document.body);
+        })(document.getElementById('files'));
 
         var slides = (function(container) {
           var current_image = 0,
@@ -246,15 +262,14 @@
           return { then: then };
         };
 
-        chooser.success(slides.replace);
-        chooser.success(sfx.start);
+        file_chooser.success(slides.replace);
+        file_chooser.success(sfx.start);
 
         keys.left(sfx.next);
-        keys.right(sfx.next);
-
         when(keys.right, sfx.clicked)
           .then(slides.next);
 
+        keys.right(sfx.next);
         when(keys.left, sfx.clicked)
           .then(slides.prev);
       </script>
